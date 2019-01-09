@@ -1563,18 +1563,9 @@ namespace tesseract {
 #elif TARGET_OS_MAC
 - (Pix *)pixForImage:(NSImage *)image
 {
-    l_int32 width = 0;
-    l_int32 height = 0;
-    
-    for (NSImageRep * imageRep in [image representations]) {
-        if ([imageRep pixelsWide] > width) { width = (l_int32)[imageRep pixelsWide]; }
-        if ([imageRep pixelsHigh] > height) { height = (l_int32)[imageRep pixelsHigh]; }
-        // Representations with both width and height of 0 seem to be problematic,
-        // specifically on macOS, so we just remove them.
-        // TODO: Maybe this could be done in setEngineImage?
-        if ([imageRep pixelsWide] == 0 && [imageRep pixelsHigh] == 0) { [image removeRepresentation:imageRep]; }
-    }
-    
+    int width = image.size.width;
+    int height = image.size.height;
+
     struct CGImage *cgImage = [image CGImageForProposedRect:nil context:nil hints:nil];
     CFDataRef imageData = CGDataProviderCopyData(CGImageGetDataProvider(cgImage));
     
