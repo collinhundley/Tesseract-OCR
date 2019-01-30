@@ -47,7 +47,6 @@
 #define XXImage NSImage
 #endif
 
-#define ERROR_DEF NSError * __autoreleasing error = nil;
 
 NSInteger const kG8DefaultResolution = 72;
 NSInteger const kG8MinCredibleResolution = 70;
@@ -94,6 +93,28 @@ namespace tesseract {
 #endif
     }
 }
+
+// New wrapper function for returning ocr bounding boxes
+- (Boxa *)g8GetComponentImage:(G8PageIteratorLevel)pageIteratorLevel {
+    tesseract::PageIteratorLevel level;
+    switch (pageIteratorLevel) {
+        case G8PageIteratorLevelBlock: level = tesseract::RIL_BLOCK; break;
+        case G8PageIteratorLevelParagraph: level = tesseract::RIL_PARA; break;
+        case G8PageIteratorLevelTextline: level = tesseract::RIL_TEXTLINE; break;
+        case G8PageIteratorLevelWord: level = tesseract::RIL_WORD; break;
+        case G8PageIteratorLevelSymbol: level = tesseract::RIL_SYMBOL; break;
+            
+    }
+    
+    const bool text_only = false;
+    const bool raw_image = false;
+    const int raw_padding = 100;
+    Pixa *pixa;
+    int *blockIDs;
+    int *paraIDs;
+    return  _tesseract->GetComponentImages(level, text_only, raw_image, raw_padding, &pixa, &blockIDs, &paraIDs);
+}
+
 
 + (void)didReceiveMemoryWarningNotification:(NSNotification*)notification {
     
@@ -300,7 +321,7 @@ namespace tesseract {
     }
     
     if ([fileManager fileExistsAtPath:destinationPath] == NO) {
-        ERROR_DEF
+        NSError *error = nil;
         BOOL res = [fileManager createDirectoryAtPath:destinationPath withIntermediateDirectories:YES attributes:nil error:&error];
         if (res == NO) {
             NSLog(@"Error creating folder %@: %@", destinationPath, error);
@@ -309,7 +330,7 @@ namespace tesseract {
     }
     
     BOOL result = YES;
-    ERROR_DEF
+    NSError *error = nil;
     NSArray *files = [fileManager contentsOfDirectoryAtPath:tessdataPath error:&error];
     if (files == nil) {
         NSLog(@"ERROR! %@", error.description);
@@ -516,33 +537,33 @@ namespace tesseract {
         NSLog(@"ERROR: No image rep");
         return NO;
     }
-
+    
     self.imageSize = CGSizeMake(imageRep.pixelsWide, imageRep.pixelsHigh);
     if (self.imageSize.width <= 0 || self.imageSize.width <= 0) {
         NSLog(@"ERROR: Image rep with wrong size");
         return NO;
     }
-
+    
     unsigned char *imageData = imageRep.bitmapData;
     if (!imageData) {
         NSLog(@"ERROR: Image rep with no imageData");
         return NO;
     }
-
+    
     int bytes_per_line = (int)imageRep.bytesPerRow;
     int bytes_per_pixel = (int)imageRep.bitsPerPixel / 8;
     int bits_per_pixel = (int)(bytes_per_pixel == 0 ? 1 : bytes_per_pixel * 8);
-
+    
     _tesseract->SetImage((const unsigned char*)imageData,
                          bytes_per_line * 8 / bits_per_pixel,
                          imageRep.pixelsHigh,
                          bytes_per_pixel,
                          bytes_per_line);
-
+    
     NSImage *image = [[NSImage alloc] initWithSize:self.imageSize];
     [image addRepresentation:imageRep];
     _image = image;
-
+    
     [self resetFlags];
     return YES;
 }
@@ -836,7 +857,7 @@ namespace tesseract {
 
 - (void)forEachWord:(G8AlternativeTesseractOCRResultBlock_t)block {
     //    hxAssert0(block);
-
+    
     // https://code.google.com/p/tesseract-ocr/wiki/APIExample
     tesseract::ResultIterator* iterator = _tesseract->GetIterator();
     tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
@@ -846,20 +867,20 @@ namespace tesseract {
             if (word) {
                 if (strlen(word)) {
                     G8AlternativeTesseractOCRResult result;
-
+                    
                     NSString *text = [NSString stringWithUTF8String:word];
                     result.word = text;
-
+                    
                     int x1, y1, x2, y2;
                     iterator->BoundingBox(level, &x1, &y1, &x2, &y2);
                     result.rect = CGRectMake(x1, self.imageSize.height - y2, x2 - x1, y2 - y1);
-
+                    
                     iterator->Baseline(level, &x1, &y1, &x2, &y2);
                     result.baseline = self.imageSize.height - ((y1 + y2) / 2.);
-
+                    
                     CGFloat confidence = iterator->Confidence(level);
                     result.confidence = confidence;
-
+                    
                     iterator->WordFontAttributes(&result.bold,
                                                  &result.italic,
                                                  &result.underlined,
@@ -868,7 +889,7 @@ namespace tesseract {
                                                  &result.smallcaps,
                                                  &result.pointsize,
                                                  &result.font_id);
-
+                    
                     if(block) {
                         block(result);
                     }
@@ -1065,15 +1086,15 @@ namespace tesseract {
     if (!self.isEngineConfigured) {
         return nil;
     }
-
-    ERROR_DEF
+    
+    NSError *error = nil;
     NSString *tempDirPath = [NSTemporaryDirectory() stringByAppendingPathComponent:[[NSProcessInfo processInfo] globallyUniqueString]];
     NSLog(@"Temp folder %@", tempDirPath);
     [NSFileManager.defaultManager createDirectoryAtPath:tempDirPath withIntermediateDirectories:YES attributes:nil error:&error];
     NSString *outputbase = [tempDirPath stringByAppendingPathComponent:@"outputbase"];
     // TODO:2018-09-21 Check for errors
     NSLog(@"Output base %@ and error %@", tempDirPath, error);
-
+    
     tesseract::TessPDFRenderer *renderer = new tesseract::TessPDFRenderer(outputbase.fileSystemRepresentation,
                                                                           self.absoluteDataPath.fileSystemRepresentation,
                                                                           false);
@@ -1102,11 +1123,11 @@ namespace tesseract {
             const char *pagename = [NSString stringWithFormat:@"page.%i", page].UTF8String;
             _tesseract->SetInputName(pagename);
             _tesseract->SetImage(pix);
-
+            
             if (_tesseract->Recognize(_monitor) != 0) {
                 NSLog(@"Failed applying OCR to image");
                 result = NO;
-            } else {                
+            } else {
                 if (renderer && renderer->AddImage(_tesseract) != 0) {
                     NSLog(@"Failed adding image to PDF");
                     result = NO;
@@ -1114,7 +1135,7 @@ namespace tesseract {
             }
             
             pixDestroy(&pix);
-
+            
             if (!result) {
                 break;
             }
@@ -1136,7 +1157,7 @@ namespace tesseract {
     
     NSString *outputbaseFilePath = [outputbase stringByAppendingPathExtension:@"pdf"];
     NSData *data = [NSData dataWithContentsOfFile:outputbaseFilePath];
-
+    
     // Cleanup
     [[NSFileManager defaultManager] removeItemAtPath:outputbaseFilePath error:&error];
     [[NSFileManager defaultManager] removeItemAtPath:tempDirPath error:&error];

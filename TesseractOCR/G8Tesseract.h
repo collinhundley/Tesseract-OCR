@@ -17,6 +17,25 @@
 #import "G8Constants.h"
 #import "G8TesseractDelegate.h"
 
+typedef struct
+{
+    int            x;           /*!< left coordinate                   */
+    int            y;           /*!< top coordinate                    */
+    int            w;           /*!< box width                         */
+    int            h;           /*!< box height                        */
+    unsigned int   refcount;    /*!< reference count (1 if no clones)  */
+    
+} G8Box;
+
+typedef struct
+{
+    int            n;           /*!< number of box in ptr array        */
+    int            nalloc;      /*!< number of box ptrs allocated      */
+    int            refcount;    /*!< reference count (1 if no clones)  */
+    G8Box          **box;       /*!< box ptr array                     */
+} G8Boxa;
+
+
 /**
  *  Default value of `sourceResolution` property.
  */
@@ -56,12 +75,19 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  */
 + (NSString *)version;
 
+
+/**
+ * New wrapper for function to extracting bounding boxes
+ */
+- (G8Boxa *)g8GetComponentImage:(G8PageIteratorLevel)pageIteratorLevel;
+
+
 /**
  *  Clear any library-level memory caches.
  *  There are a variety of expensive-to-load constant data structures (mostly
  *  language dictionaries) that are cached globally. This function allows the
- *  clearing of these caches. It's safe to call this method, while a 
- *  recognition is in progress. It's also called automatically on 
+ *  clearing of these caches. It's safe to call this method, while a
+ *  recognition is in progress. It's also called automatically on
  *  UIApplicationDidReceiveMemoryWarningNotification
  */
 + (void)clearCache;
@@ -72,7 +98,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  *  you set `language` to "foo", then "foo.traineddata" must exist in the
  *  "tessdata" folder.
  *
- *  @note   You should always check that the languages have been set correctly 
+ *  @note   You should always check that the languages have been set correctly
  *          and Tesseract has been configured its engine for the languages
  *          specified by `isEngineConfigured` property.
  */
@@ -174,7 +200,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  *                    aren't using a multipage image or don't know what this
  *                    means, use `0` for `pageNumber`.
  *
- *  @return The HTML-formatted string with hOCR markup or nil if error occured 
+ *  @return The HTML-formatted string with hOCR markup or nil if error occured
  *          or the engine is not properly configured.
  */
 - (NSString *)recognizedHOCRForPageNumber:(int)pageNumber;
@@ -183,7 +209,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 // already being written to the outputbase path)
 /**
  *  Produces a PDF output with the pages sent to the function
- *  @param  images  An array of the input images being recognized and 
+ *  @param  images  An array of the input images being recognized and
  *                  included into the output PDF file.
  *  @return NSData  representing output PDF file or nil if error occured or
  *                  the engine is not properly configured.
@@ -202,7 +228,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 /**
  *  The result of Tesseract's orientation analysis of the target image. See
  *  `G8Orientation` in G8Constants.h for the possible orientations.
- *  
+ *
  *  @note You must have a file called "osd.traineddata" in the "tessdata"
  *        folder to use this method. You can download this file from:
  *        https://code.google.com/p/tesseract-ocr/downloads/list
@@ -210,8 +236,8 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 @property (nonatomic, readonly) G8Orientation orientation;
 
 /**
- *  The result of Tesseract's writing direction analysis of the target image. 
- *  See `G8WritingDirection` in G8Constants.h for the possible writing 
+ *  The result of Tesseract's writing direction analysis of the target image.
+ *  See `G8WritingDirection` in G8Constants.h for the possible writing
  *  directions.
  *
  *  @note You must have a file called "osd.traineddata" in the "tessdata"
@@ -233,7 +259,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 /**
  *  The result of Tesseract's deskew angle analysis of the target image.
  *  This quantity is the number of radians required to rotate the image
- *  counter-clockwise for the text to be level. The deskew angle will be 
+ *  counter-clockwise for the text to be level. The deskew angle will be
  *  between -Pi/4 and Pi/4.
  *
  *  @note You must have a file called "osd.traineddata" in the "tessdata"
@@ -248,7 +274,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  *  image. See G8RecognizedBlock.h for more information about the available
  *  fields for this data structure.
  *
- *  @note It has been observed that this method only works when using the 
+ *  @note It has been observed that this method only works when using the
  *        `G8OCREngineModeTesseractOnly` mode for `engineMode`. It returns nil,
  *        if the engine is not properly configured.
  */
@@ -261,12 +287,12 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  *  in the target image, including the bounding boxes for each character.
  *
  *  @param pageIteratorLevel A `G8PageIteratorLevel` representing the resolution
- *                           of interest. See G8Constants.h for the available 
+ *                           of interest. See G8Constants.h for the available
  *                           resolution options.
  *
  *  @return An array of `G8RecognizedBlock`'s, each containing a confidence
- *          value and a bounding box for the text it represents. See 
- *          G8RecognizedBlock.h for more information about the available fields 
+ *          value and a bounding box for the text it represents. See
+ *          G8RecognizedBlock.h for more information about the available fields
  *          for this data structure.
  *
  *  @note The method returns nil, if the engine is not properly configured.
@@ -275,19 +301,19 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 
 
 /**
- *	Retrieve Tesseract's recognition result starting at the provided level including
- *	all sublevels down to the character level.
- *	For example, the pageIteratorLevel == G8PageIteratorLevelTextline returns
+ *    Retrieve Tesseract's recognition result starting at the provided level including
+ *    all sublevels down to the character level.
+ *    For example, the pageIteratorLevel == G8PageIteratorLevelTextline returns
  *  an array of `G8RecognizedBlock`'s representing the lines recognized
- *  in the target image. Each textline includes an array of `G8RecognizedBlock`'s 
- *	representing words which in turn include an array of `G8RecognizedBlock`'s
- *	representing characters.
+ *  in the target image. Each textline includes an array of `G8RecognizedBlock`'s
+ *    representing words which in turn include an array of `G8RecognizedBlock`'s
+ *    representing characters.
  *
  *  @param pageIteratorLevel A `G8PageIteratorLevel` representing the start resolution
  *                           See G8Constants.h for the available resolution options.
  *
- *	@return An array of `G8HierarchicalRecognizedBlock`'s, each containing a confidence
- *			value and a bounding box for the text it represents.
+ *    @return An array of `G8HierarchicalRecognizedBlock`'s, each containing a confidence
+ *            value and a bounding box for the text it represents.
  *
  *  @note The method returns nil, if the engine is not properly configured.
  */
@@ -308,7 +334,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 #endif
 
 /**
- *  Create a copy of the target image with boxes (and optionally labels) drawn 
+ *  Create a copy of the target image with boxes (and optionally labels) drawn
  *  for each provided recognition block.
  *
  *  @param blocks      An array of `G8RecognizedBlock`'s to draw on the image.
@@ -335,7 +361,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 /**
  *  The default initializer.
  *  @return A G8Tesseract instance initialized with neither language,
- *          nor any other settings specified. You can set the language later, 
+ *          nor any other settings specified. You can set the language later,
  *          using language property.
  */
 - (instancetype)init;
@@ -345,7 +371,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  *
  *  @param language The language to use in recognition. See `language`.
  *
- *  @return The initialized Tesseract object. 
+ *  @return The initialized Tesseract object.
  *
  *  @note   You should check that the `language` property matches the languages
  *          you have specified. Also you may ensure that Tesseract is properly
@@ -359,7 +385,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  *  @param language   The language to use in recognition. See `language`.
  *  @param engineMode The engine mode to use in recognition. See `engineMode`.
  *
- *  @return The initialized Tesseract object. 
+ *  @return The initialized Tesseract object.
  *
  *  @note   You should check that the `language` property matches the languages
  *          you have specified. Also you may ensure that Tesseract is properly
@@ -419,7 +445,7 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  *                                  The config files must exist in one of two
  *                                  possible folders:  tessdata/tessconfigs or
  *                                  tessdata/configs.
- *  @param absoluteDataPath         If specified, the whole contents of the 
+ *  @param absoluteDataPath         If specified, the whole contents of the
  *                                  tessdata folder in the application bundle
  *                                  (if present) will be copied to
  *                                  <absoluteDataPath>/tessdata and Tesseract will
@@ -457,21 +483,21 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 - (void)setVariableValue:(NSString *)value forKey:(NSString *)key;
 
 /**
- *  Returns a Tesseract variable for the given key. See G8TesseractParameters.h 
+ *  Returns a Tesseract variable for the given key. See G8TesseractParameters.h
  *  for the available options.
  *
  *  @param key  The option to get.
  *
- *  @return     Returns the variable value for the given key, if it's been set. 
- *              nil otherwise. Also returns nil if the engine is not properly 
+ *  @return     Returns the variable value for the given key, if it's been set.
+ *              nil otherwise. Also returns nil if the engine is not properly
  *              configured. Refer to `isEngineConfigured` property.
  */
 - (NSString*)variableValueForKey:(NSString *)key;
 
 /**
- *  Set Tesseract variables using a dictionary. See G8TesseractParameters.h for 
- *  the available options. Only runtime variables could be set. To set up 
- *  initial time variables use 
+ *  Set Tesseract variables using a dictionary. See G8TesseractParameters.h for
+ *  the available options. Only runtime variables could be set. To set up
+ *  initial time variables use
  *  initWithLanguage:configDictionary:configFileNames:cachesRelatedDataPath:engineMode:
  *
  *  @param dictionary The dictionary of key/value pairs to set for Tesseract.
