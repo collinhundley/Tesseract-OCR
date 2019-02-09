@@ -83,6 +83,18 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 
 
 /**
+ * New wrapper for getting cgimages to tesseract
+ */
+
+- (void)setCGImage:(CGImageRef)cgimage;
+
+/**
+ * Setting the CGImage size. Must be called before setCGImage
+ */
+
+- (void)setCGImageSize:(NSSize)cgimagesize;
+
+/**
  *  Clear any library-level memory caches.
  *  There are a variety of expensive-to-load constant data structures (mostly
  *  language dictionaries) that are cached globally. This function allows the
@@ -159,6 +171,8 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 
 - (BOOL)useBitmapImageRep:(NSBitmapImageRep *)imageRep;
 #endif
+
+@property (nonatomic, assign) CGImageRef *cgimage;
 
 /**
  *  A rectangle to specify the region of the image on which Tesseract should
