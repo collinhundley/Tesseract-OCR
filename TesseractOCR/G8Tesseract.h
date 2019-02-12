@@ -81,7 +81,6 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
  */
 - (G8Boxa *)g8GetComponentImage:(G8PageIteratorLevel)pageIteratorLevel;
 
-
 /**
  * New wrapper for getting cgimages to tesseract
  */
