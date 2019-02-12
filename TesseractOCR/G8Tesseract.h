@@ -89,12 +89,6 @@ typedef void(^G8AlternativeTesseractOCRResultBlock_t)(struct G8AlternativeTesser
 - (void)setCGImage:(CGImageRef)cgimage;
 
 /**
- * Setting the CGImage size. Must be called before setCGImage
- */
-
-- (void)setCGImageSize:(NSSize)cgimagesize;
-
-/**
  *  Clear any library-level memory caches.
  *  There are a variety of expensive-to-load constant data structures (mostly
  *  language dictionaries) that are cached globally. This function allows the

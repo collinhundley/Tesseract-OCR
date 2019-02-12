@@ -535,27 +535,10 @@ namespace tesseract {
 
 - (void)setEngineCGImage:(CGImageRef)image {
     
-    self.imageSize = cgImageSize;
-    
+    self.imageSize = CGSizeMake(CGImageGetWidth(image),
+                                CGImageGetHeight(image));
     if (self.isEngineConfigured) {
         Pix *pix = nullptr;
-        
-        //        if ([self.delegate respondsToSelector:@selector(preprocessedImageForTesseract:sourceImage:)]) {
-        //            NSImage *thresholdedImage = [self.delegate preprocessedImageForTesseract:self sourceImage:image];
-        //            if (thresholdedImage != nil) {
-        //                // TODO: Is getting the size like this okay?
-        //                self.imageSize = thresholdedImage.size;
-        //
-        //                Pix *pixs = [self pixForImage:thresholdedImage];
-        //                pix = pixConvertTo1(pixs, UINT8_MAX / 2);
-        //                pixDestroy(&pixs);
-        //
-        //                if (pix == nullptr) {
-        //                    NSLog(@"WARNING: Can't create Pix for custom thresholded image!");
-        //                }
-        //            }
-        //        }
-        
         if (pix == nullptr) {
             pix = [self pixForCGImage:image];
         }
@@ -733,20 +716,7 @@ namespace tesseract {
 
 #endif
 
-//- (void)setCgimage:(struct CGImageRef *) cgimage
-//{
-//    _cgimage = cgimage
-//}
-
-CGImage *cgImage;
-NSSize cgImageSize;
-
-- (void)setCGImageSize:(NSSize)cgimagesize {
-    cgImageSize = cgimagesize;
-}
-
 - (void)setCGImage:(CGImageRef)cgimage {
-    cgImage = cgimage;
     [self setEngineCGImage:cgimage];
     _rect = (CGRect){CGPointZero, self.imageSize};
 }
@@ -1643,6 +1613,7 @@ NSSize cgImageSize;
     
     return pix;
 }
+
 #elif TARGET_OS_MAC
 - (Pix *)pixForImage:(NSImage *)image
 {
@@ -1657,89 +1628,8 @@ NSSize cgImageSize;
         // TODO: Maybe this could be done in setEngineImage?
         if ([imageRep pixelsWide] == 0 && [imageRep pixelsHigh] == 0) { [image removeRepresentation:imageRep]; }
     }
-    
     struct CGImage *cgImage = [image CGImageForProposedRect:nil context:nil hints:nil];
-    CFDataRef imageData = CGDataProviderCopyData(CGImageGetDataProvider(cgImage));
-    
-    const UInt8 *pixels = CFDataGetBytePtr(imageData); //xxx7
-    
-    size_t bitsPerPixel = CGImageGetBitsPerPixel(cgImage);
-    size_t bytesPerPixel = bitsPerPixel / 8;
-    size_t bytesPerRow = CGImageGetBytesPerRow(cgImage);
-    
-    int bpp = MAX(1, (int)bitsPerPixel);
-    Pix *pix = pixCreate(width, height, bpp == 24 ? 32 : bpp);
-    l_uint32 *data = pixGetData(pix);
-    int wpl = pixGetWpl(pix);
-    
-    void (^copyBlock)(l_uint32 *toAddr, NSUInteger toOffset, const UInt8 *fromAddr, NSUInteger fromOffset) = nil;
-    switch (bpp) {
-            
-#if 0 // BPP1 start. Uncomment this if UIImage can support 1bpp someday
-            // Just a reference for the copyBlock
-        case 1:
-            for (int y = 0; y < height; ++y, data += wpl, pixels += bytesPerRow) {
-                for (int x = 0; x < width; ++x) {
-                    if (pixels[x / 8] & (0x80 >> (x % 8))) {
-                        CLEAR_DATA_BIT(data, x);
-                    }
-                    else {
-                        SET_DATA_BIT(data, x);
-                    }
-                }
-            }
-            break;
-#endif // BPP1 end
-            
-        case 8: {
-            copyBlock = ^(l_uint32 *toAddr, NSUInteger toOffset, const UInt8 *fromAddr, NSUInteger fromOffset) {
-                SET_DATA_BYTE(toAddr, toOffset, fromAddr[fromOffset]);
-            };
-            break;
-        }
-            
-#if 0 // BPP24 start. Uncomment this if UIImage can support 24bpp someday
-            // Just a reference for the copyBlock
-        case 24:
-            // Put the colors in the correct places in the line buffer.
-            for (int y = 0; y < height; ++y, pixels += bytesPerRow) {
-                for (int x = 0; x < width; ++x, ++data) {
-                    SET_DATA_BYTE(data, COLOR_RED, pixels[3 * x]);
-                    SET_DATA_BYTE(data, COLOR_GREEN, pixels[3 * x + 1]);
-                    SET_DATA_BYTE(data, COLOR_BLUE, pixels[3 * x + 2]);
-                }
-            }
-            break;
-#endif // BPP24 end
-            
-        case 32: {
-            copyBlock = ^(l_uint32 *toAddr, NSUInteger toOffset, const UInt8 *fromAddr, NSUInteger fromOffset) {
-                toAddr[toOffset] = (fromAddr[fromOffset] << 24) | (fromAddr[fromOffset + 1] << 16) |
-                (fromAddr[fromOffset + 2] << 8) | fromAddr[fromOffset + 3];
-            };
-            break;
-        }
-            
-        default:
-            NSLog(@"Cannot convert image to Pix with bpp = %d", bpp); // LCOV_EXCL_LINE
-    }
-    
-    // TODO: Not sure what to do here with orientation. Can we just assume that the
-    // orientation will have already been sorted if its on macOS?
-    if (copyBlock) {
-        // Maintain byte order consistency across different endianness.
-        for (int y = 0; y < height; ++y, pixels += bytesPerRow, data += wpl) {
-            for (int x = 0; x < width; ++x) {
-                copyBlock(data, x, pixels, x * bytesPerPixel);
-            }
-        }
-    }
-    
-    pixSetYRes(pix, (l_int32)self.sourceResolution);
-    
-    CFRelease(imageData);
-    
-    return pix;
+    return ([self pixForCGImage:cgImage]);
 }
 
 
@@ -1755,7 +1645,7 @@ NSSize cgImageSize;
     size_t bytesPerRow = CGImageGetBytesPerRow(cgImage);
     
     int bpp = MAX(1, (int)bitsPerPixel);
-    Pix *pix = pixCreate(cgImageSize.width, cgImageSize.height, bpp == 24 ? 32 : bpp);
+    Pix *pix = pixCreate(self.imageSize.width, self.imageSize.height, bpp == 24 ? 32 : bpp);
     l_uint32 *data = pixGetData(pix);
     int wpl = pixGetWpl(pix);
     
@@ -1815,8 +1705,8 @@ NSSize cgImageSize;
     // orientation will have already been sorted if its on macOS?
     if (copyBlock) {
         // Maintain byte order consistency across different endianness.
-        for (int y = 0; y < cgImageSize.height; ++y, pixels += bytesPerRow, data += wpl) {
-            for (int x = 0; x < cgImageSize.width; ++x) {
+        for (int y = 0; y < self.imageSize.height; ++y, pixels += bytesPerRow, data += wpl) {
+            for (int x = 0; x < self.imageSize.width; ++x) {
                 copyBlock(data, x, pixels, x * bytesPerPixel);
             }
         }
