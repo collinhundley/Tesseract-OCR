@@ -613,17 +613,19 @@ namespace tesseract {
     CGFloat height = CGRectGetHeight(rect);
     
     // Because of custom preprocessing we may have to resize rect
-    if (CGSizeEqualToSize(self.image.size, self.imageSize) == NO) {
-        // TODO: What to do here? Is this what we want or should the image size be returning
-        // the CGImageRef size?
-        
-        CGFloat widthFactor = self.imageSize.width / self.image.size.width;
-        CGFloat heightFactor = self.imageSize.height / self.image.size.height;
-        
-        x *= widthFactor;
-        y *= heightFactor;
-        width *= widthFactor;
-        heightFactor *= heightFactor;
+    if(self.image) {
+        if (CGSizeEqualToSize(self.image.size, self.imageSize) == NO) {
+            // TODO: What to do here? Is this what we want or should the image size be returning
+            // the CGImageRef size?
+            
+            CGFloat widthFactor = self.imageSize.width / self.image.size.width;
+            CGFloat heightFactor = self.imageSize.height / self.image.size.height;
+            
+            x *= widthFactor;
+            y *= heightFactor;
+            width *= widthFactor;
+            heightFactor *= heightFactor;
+        }
     }
     
     CGFloat (^clip)(CGFloat, CGFloat, CGFloat) = ^(CGFloat value, CGFloat min, CGFloat max) {
@@ -1308,7 +1310,7 @@ namespace tesseract {
     self.recognized = NO;
     int returnCode = 0;
     @try {
-        returnCode = _tesseract->Recognize(_monitor);  //xxx7 hier crasht er
+        returnCode = _tesseract->Recognize(_monitor);
         self.recognized = YES;
     }
     //LCOV_EXCL_START
@@ -1638,7 +1640,7 @@ namespace tesseract {
     struct CGImage *cgImage = image;
     CFDataRef imageData = CGDataProviderCopyData(CGImageGetDataProvider(cgImage));
     
-    const UInt8 *pixels = CFDataGetBytePtr(imageData); //xxx7
+    const UInt8 *pixels = CFDataGetBytePtr(imageData);
     
     size_t bitsPerPixel = CGImageGetBitsPerPixel(cgImage);
     size_t bytesPerPixel = bitsPerPixel / 8;
