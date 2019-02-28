@@ -103,16 +103,8 @@ namespace tesseract {
         case G8PageIteratorLevelTextline: level = tesseract::RIL_TEXTLINE; break;
         case G8PageIteratorLevelWord: level = tesseract::RIL_WORD; break;
         case G8PageIteratorLevelSymbol: level = tesseract::RIL_SYMBOL; break;
-            
     }
-    
-    const bool text_only = false;
-    const bool raw_image = false;
-    const int raw_padding = 100;
-    Pixa *pixa;
-    int *blockIDs;
-    int *paraIDs;
-    return  _tesseract->GetComponentImages(level, text_only, raw_image, raw_padding, &pixa, &blockIDs, &paraIDs);
+    return _tesseract->GetComponentImages(level, false, nullptr, nullptr);
 }
 
 
