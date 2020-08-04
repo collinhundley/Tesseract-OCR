@@ -1,0 +1,12 @@
+prefix=@@HOMEBREW_CELLAR@@/leptonica/1.80.0
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include/leptonica
+
+Name: leptonica
+Description: An open source C library for efficient image processing and image analysis operations
+Version: 1.80.0
+Libs: -L${libdir} -llept
+Libs.private: -lz -L@@HOMEBREW_CELLAR@@/libpng/1.6.37/lib -lpng16 -lz -L@@HOMEBREW_CELLAR@@/jpeg/9d/lib -ljpeg -L@@HOMEBREW_CELLAR@@/openjpeg/2.3.1/lib -lopenjp2 -lgif -L@@HOMEBREW_CELLAR@@/libtiff/4.1.0/lib -ltiff -L@@HOMEBREW_CELLAR@@/webp/1.1.0/lib -lwebp -L@@HOMEBREW_CELLAR@@/webp/1.1.0/lib -lwebpmux -lwebp
+Cflags: -I${includedir}
+
