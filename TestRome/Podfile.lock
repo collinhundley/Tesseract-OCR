@@ -1,0 +1,16 @@
+PODS:
+  - TesseractOCR (4.0.0)
+
+DEPENDENCIES:
+  - TesseractOCR (from `..`)
+
+EXTERNAL SOURCES:
+  TesseractOCR:
+    :path: ".."
+
+SPEC CHECKSUMS:
+  TesseractOCR: 20a913f80a104ee91bea7de4fe7e9f7fa3603e3c
+
+PODFILE CHECKSUM: 2a1c3baa1d622d7005538582c2f7602f483603a6
+
+COCOAPODS: 1.10.0

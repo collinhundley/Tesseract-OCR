@@ -1,0 +1,20 @@
+platform :osx, '10.16'
+
+plugin 'cocoapods-rome', {
+  dsym: true,
+  configuration: 'Release'
+}
+
+target 'buildFrameworks' do
+  current_target_definition.swift_version = '4.2'
+  pod 'TesseractOCR', path: ".."
+end
+
+post_install do |installer_representation|
+    installer_representation.pods_project.targets.each do |target|
+        target.build_configurations.each do |config|
+            config.build_settings['MACOSX_DEPLOYMENT_TARGET'] = "10.15"
+	    config.build_settings['ARCHS'] = "x86_64"
+        end
+    end
+end
