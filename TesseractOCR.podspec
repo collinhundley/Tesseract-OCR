@@ -15,23 +15,23 @@ Pod::Spec.new do |s|
 
   s.source                     = { git: 'https://github.com/gali8/Tesseract-OCR-iOS.git', tag: s.version.to_s }
 
-  s.platform                   = :ios, '10.0'
+#  s.platform                   = :ios, '10.0'
 
-  s.ios.source_files           = 'TesseractOCR/*.{h,m,mm}', 'TesseractOCR/ios/include/**/*.h'
-  s.ios.private_header_files   = 'TesseractOCR/ios/include/**/*.h'
-  s.ios.frameworks             = 'UIKit', 'Foundation'
+#  s.ios.source_files           = 'TesseractOCR/*.{h,m,mm}', 'TesseractOCR/ios/include/**/*.h'
+#  s.ios.private_header_files   = 'TesseractOCR/ios/include/**/*.h'
+#  s.ios.frameworks             = 'UIKit', 'Foundation'
 
-  s.ios.deployment_target      = '10.0'
-  s.ios.vendored_library       = 'TesseractOCR/ios/lib/*.a'
+#  s.ios.deployment_target      = '10.0'
+#  s.ios.vendored_library       = 'TesseractOCR/ios/lib/*.a'
 
-  s.platform                   = :macos, '10.13'
+  s.platform                   = :macos, '10.15'
 
-  s.macos.source_files         = 'TesseractOCR/*.{h,m,mm}', 'TesseractOCR/macos/include/**/*.h'
-  s.macos.private_header_files = 'TesseractOCR/macos/include/**/*.h'
+  s.macos.source_files         = 'TesseractOCR/*.{h,m,mm}', 'TesseractOCR/macos-arm64_x86_64/include/**/*.h'
+  s.macos.private_header_files = 'TesseractOCR/macos-arm64_x86_64/include/**/*.h'
   s.macos.frameworks           = 'AppKit', 'Foundation'
 
-  s.macos.deployment_target    = '10.13'
-  s.macos.vendored_library     = 'TesseractOCR/macos/lib/*.a'
+  s.macos.deployment_target    = '10.15'
+  s.macos.vendored_library     = 'TesseractOCR/macos-arm64_x86_64/lib/*.a'
 
   s.requires_arc               = true
 
